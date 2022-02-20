@@ -14,23 +14,27 @@ void SystemClockInit() {
 		//Error_Handler();
 	}
 
-	//LL_RCC_HSE_EnableCSS();
-	LL_RCC_HSE_EnableBypass();
-	LL_RCC_HSE_Enable();
-	while(LL_RCC_HSE_IsReady() != 1);		//Wait till HSE is ready
+	LL_RCC_HSI_SetCalibTrimming(16);
+	LL_RCC_HSI_Enable();
+	while(LL_RCC_HSI_IsReady() != 1);
 
-	LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE_DIV_2, LL_RCC_PLL_MUL_9);
+//	//LL_RCC_HSE_EnableCSS();
+//	LL_RCC_HSE_EnableBypass();
+//	LL_RCC_HSE_Enable();
+//	while(LL_RCC_HSE_IsReady() != 1);		//Wait till HSE is ready
+
+	LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI_DIV_2, LL_RCC_PLL_MUL_16);
 	LL_RCC_PLL_Enable();
 	while(LL_RCC_PLL_IsReady() != 1);		//Wait till PLL is ready
 
 	LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
-	LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_2);
-	LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
+	LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_2);			//APB1 Peripheral Clock (PCLK1): HCLK / DIV = 64MHz/2 = 32MHz
+	LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);			//APB2 Peripheral Clock (PCLK2): HCLK / DIV = 64MHz/1 = 64MHz
 	LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL);
 	while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_PLL);		//Wait till System clock is ready
 
-	LL_SetSystemCoreClock(72000000);
-	LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSRC_PCLK2_DIV_6);				//Set ADC Clock
+	LL_SetSystemCoreClock(64000000);
+	LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSRC_PCLK2_DIV_8);				//Set ADC Clock (have to be <= 14MHz)
 	LL_RCC_SetUSBClockSource(LL_RCC_USB_CLKSOURCE_PLL_DIV_1_5);				//Set USB Clock
 }
 
@@ -40,8 +44,8 @@ void SystemClockInit() {
   * @return	None
   */
 void SystemTickInit() {
-	//Set systick to 1ms in using frequency set to 72MHz
-	LL_Init1msTick(72000000);
+	//Set systick to 1ms in using frequency set to 64MHz
+	LL_Init1msTick(64000000);
 
 	LL_SYSTICK_EnableIT();
 }

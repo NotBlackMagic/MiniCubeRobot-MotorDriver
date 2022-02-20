@@ -9,8 +9,8 @@ void StopwatchInit() {
 	//Enable bus clocks
 	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
 
-	//Configure the Timer: TIM2 is connected to APB1 Timer clocks which has the APB1 clock = 72MHz
-	LL_TIM_SetPrescaler(TIM2, 71);					//Set Clock to 1MHz (1us); Fpwm = 72MHz / ((Prescaler + 1) * Compare)
+	//Configure the Timer: TIM2 is connected to APB1 Timer clocks which has the APB1 clock = 64MHz
+	LL_TIM_SetPrescaler(TIM2, 63);					//Set Clock to 1MHz (1us); Fpwm = 64MHz / ((Prescaler + 1) * Compare)
 	LL_TIM_SetCounterMode(TIM2, LL_TIM_COUNTERMODE_UP);
 	LL_TIM_SetAutoReload(TIM2, UINT16_MAX);
 	LL_TIM_EnableARRPreload(TIM2);

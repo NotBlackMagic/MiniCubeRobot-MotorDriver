@@ -10,6 +10,8 @@
 #include "stm32f1xx_ll_gpio.h"
 #include "stm32f1xx_ll_spi.h"
 
+#define SPI2_BUFFER_LENGTH						64
+
 void SPI1Init();
 uint8_t SPI1ReadWrite(uint8_t txByte);
 void SPI1Write(uint8_t byte);
@@ -17,6 +19,8 @@ uint8_t SPI1Read();
 
 void SPI2Init();
 uint8_t SPI2ReadWrite(uint8_t txByte);
+uint8_t SPI2Read(uint8_t* data);
+uint8_t SPI2Write(uint8_t* data, uint8_t length);
 
 #ifdef __cplusplus
 }

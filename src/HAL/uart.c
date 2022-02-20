@@ -44,7 +44,7 @@ void UART1Init(uint32_t baud) {
 	NVIC_SetPriority(USART1_IRQn, 0);
 	NVIC_EnableIRQ(USART1_IRQn);
 	LL_USART_EnableIT_RXNE(USART1);
-	LL_USART_EnableIT_IDLE(USART1);
+//	LL_USART_EnableIT_IDLE(USART1);
 //	LL_USART_EnableIT_TXE(USART1);
 
 	//Enable UART
@@ -69,8 +69,8 @@ void UART1SetBaudrate(uint32_t baudrate) {
   */
 uint8_t UART1Write(uint8_t* data, uint16_t length) {
 	//Wait for buffer empty, if is not
-//	uint32_t timestamp = GetSysTick();
-//	while(uart1TXBufferLength != 0x00 && (timestamp + UART_WRITE_TIMEOUT) > GetSysTick());
+	uint32_t timestamp = GetSysTick();
+	while(uart1TXBufferLength != 0x00 && (timestamp + UART_WRITE_TIMEOUT) > GetSysTick());
 
 	if(uart1TXBufferLength == 0x00) {
 		uint16_t i;
@@ -152,13 +152,29 @@ void USART1_IRQHandler(void) {
 		}
 		else {
 			//All good, read received byte to RX buffer
-			uart1RXBuffer[uart1RXBufferIndex++] = LL_USART_ReceiveData8(USART1);
+			uint8_t rxByte = LL_USART_ReceiveData8(USART1);
+			uart1RXBuffer[uart1RXBufferIndex++] = rxByte;
+
+			//End of transmission detected based on robot message frame payload length (byte 3)
+			if(uart1RXBufferIndex >= 3) {
+				//Payload length byte received, check for end of packet
+				uint8_t payloadLength = uart1RXBuffer[2];
+				if(uart1RXBufferIndex >= (payloadLength + 5)) {
+					//Full robot message frame received
+					uart1RXBufferLength = uart1RXBufferIndex;
+				}
+			}
+
+//			if(rxByte == '\n') {
+//				//End of frame transmission, detected by '\n' character
+//				uart1RXBufferLength = uart1RXBufferIndex;
+// 			}
 		}
 	}
 
 	if(LL_USART_IsActiveFlag_IDLE(USART1) == 0x01) {
 		//End of frame transmission, detected by receiver timeout
-		uart1RXBufferLength = uart1RXBufferIndex;
+//		uart1RXBufferLength = uart1RXBufferIndex;
 
 		//Clear IDLE Flag
 		LL_USART_ClearFlag_IDLE(USART1);

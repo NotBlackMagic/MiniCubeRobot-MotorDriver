@@ -10,10 +10,7 @@ extern "C" {
 #include "stm32f1xx_ll_gpio.h"
 #include "stm32f1xx_ll_tim.h"
 
-void TIM2Init();
-
-void TIM2Start();
-uint32_t TIM2Stop();
+void TIM3Init();
 
 #ifdef __cplusplus
 }

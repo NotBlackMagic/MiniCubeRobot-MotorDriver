@@ -6,6 +6,13 @@ uint16_t spi1TXBufferIndex;
 uint16_t spi1TXBufferLength;
 uint8_t spi1TXBuffer[SPI_TX_BUFFER_SIZE];
 
+//SPI2 Buffer variables
+volatile uint8_t spi2RXBufferLength;
+volatile uint8_t spi2TXBufferLength;
+volatile uint8_t spi2RXBufferIndex;
+volatile uint8_t spi2TXBufferIndex;
+volatile uint8_t spi2RTXBuffer[SPI2_BUFFER_LENGTH];
+
 /**
   * @brief	This function initializes the SPI1 interface, also sets the respective GPIO pins
   * @param	None
@@ -71,19 +78,19 @@ void SPI2Init() {
 	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_13, LL_GPIO_SPEED_FREQ_HIGH);
 	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_13, LL_GPIO_OUTPUT_PUSHPULL);
 	//Set MISO, on PB14
-	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_14, LL_GPIO_MODE_ALTERNATE);
+	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_14, LL_GPIO_MODE_FLOATING);
 	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_14, LL_GPIO_SPEED_FREQ_HIGH);
 	//Set MOSI, on PB15
 	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_15, LL_GPIO_MODE_ALTERNATE);
 	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_15, LL_GPIO_SPEED_FREQ_HIGH);
 	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_15, LL_GPIO_OUTPUT_PUSHPULL);
-	//Set CS on PB12
+	//Set CS, on PB12
 	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_12, LL_GPIO_MODE_ALTERNATE);
 	LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_12, LL_GPIO_SPEED_FREQ_HIGH);
 	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_12, LL_GPIO_OUTPUT_PUSHPULL);
 
 	//Configure SPI Interface
-	LL_SPI_SetBaudRatePrescaler(SPI2, LL_SPI_BAUDRATEPRESCALER_DIV256);			//Set to 281kHz
+	LL_SPI_SetBaudRatePrescaler(SPI2, LL_SPI_BAUDRATEPRESCALER_DIV8);		//Set to: SPI_CLK = PCLK1 / DIV = 32MHz / 8 = 4MHz
 	LL_SPI_SetTransferDirection(SPI2,LL_SPI_FULL_DUPLEX);
 	LL_SPI_SetClockPhase(SPI2, LL_SPI_PHASE_1EDGE);
 	LL_SPI_SetClockPolarity(SPI2, LL_SPI_POLARITY_LOW);
@@ -93,9 +100,11 @@ void SPI2Init() {
 	LL_SPI_SetMode(SPI2, LL_SPI_MODE_MASTER);
 
 	//Configure SPI Interrupts
+	NVIC_SetPriority(SPI2_IRQn, 1);
+	NVIC_EnableIRQ(SPI2_IRQn);
 //	LL_SPI_EnableIT_TXE(SPI2);
-//	LL_SPI_EnableIT_RXNE(SPI2);
-//	LL_SPI_EnableIT_ERR(SPI2);
+	LL_SPI_EnableIT_RXNE(SPI2);
+	LL_SPI_EnableIT_ERR(SPI2);
 
 	LL_SPI_Enable(SPI2);
 }
@@ -150,4 +159,107 @@ uint8_t SPI2ReadWrite(uint8_t txByte) {
 	rxByte = LL_SPI_ReceiveData8(SPI2);
 
 	return rxByte;
+}
+
+/**
+  * @brief	This function reads the data received during last data transfer
+  * @param	data: data array to where the received data should be copied to
+  * @return	Returns the number of bytes read/received
+  */
+uint8_t SPI2Read(uint8_t* data) {
+	if(spi2RXBufferLength == 0x00) {
+		//RX Buffer not full
+		return 0x00;
+	}
+
+	uint8_t i;
+	for(i = 0; i < spi2RXBufferLength; i++) {
+		data[i] = spi2RTXBuffer[i];
+	}
+	spi2RXBufferLength = 0x00;
+	spi2RXBufferIndex = 0x00;
+
+	return i;
+}
+
+/**
+  * @brief	This function starts a new data full duplex transfer
+  * @param	data: data array to transmit
+  * @param	length: length of the transmit data array
+  * @return	0 -> No Errors; 1 -> Error
+  */
+uint8_t SPI2Write(uint8_t* data, uint8_t length) {
+	if(spi2TXBufferIndex != 0x00) {
+		//TX Buffer not empty
+		return 0x01;
+	}
+
+	if(length > SPI2_BUFFER_LENGTH) {
+		//Buffer overflow
+		return 0x01;
+	}
+
+	uint8_t i;
+	for(i = 0; i < length; i++) {
+		spi2RTXBuffer[i] = data[i];
+	}
+	spi2TXBufferLength = length;
+	spi2TXBufferIndex = 0x00;
+
+	//Enable SPI
+//	LL_SPI_Enable(SPI2);
+
+	//Write data to the SPI out register
+	LL_SPI_TransmitData8(SPI2, spi2RTXBuffer[spi2TXBufferIndex++]);
+
+//	LL_SPI_EnableIT_TXE(SPI2);
+
+	return 0x00;
+}
+
+__attribute__((weak)) void SPI2RXCompleteCallback(uint8_t* data, uint16_t dataLength) {}
+
+/**
+  * @brief  This function handles SPI2 interrupt request.
+  * @param  None
+  * @return None
+  */
+void SPI2_IRQHandler(void) {
+	//Check RXNE flag value in ISR register
+	if(LL_SPI_IsActiveFlag_RXNE(SPI2) && LL_SPI_IsEnabledIT_RXNE(SPI2)) {
+		spi2RTXBuffer[spi2RXBufferIndex++] = LL_SPI_ReceiveData8(SPI2);
+
+		if(spi2RXBufferIndex >= spi2TXBufferLength) {
+			//RX complete
+			spi2RXBufferLength = spi2RXBufferIndex;
+			spi2RXBufferIndex = 0x00;
+
+			spi2TXBufferIndex = 0x00;
+
+			//Call RX complete callback
+			SPI2RXCompleteCallback(spi2RTXBuffer, spi2RXBufferLength);
+		}
+		else {
+			//Get next TX ready
+			LL_SPI_TransmitData8(SPI2, spi2RTXBuffer[spi2TXBufferIndex++]);
+		}
+	}
+
+	//Check TXE flag value in ISR register
+//	if(LL_SPI_IsActiveFlag_TXE(SPI2) && LL_SPI_IsEnabledIT_TXE(SPI2)) {
+//		LL_SPI_TransmitData8(SPI2, spi2RTXBuffer[spi2TXBufferIndex++]);
+//
+//		if(spi2TXBufferIndex >= spi2TXBufferLength) {
+//			//TX complete
+////			spi2TXBufferLength = 0x00;		//Needed for RX ISR
+////			spi2TXBufferIndex = 0x00;
+//
+//			LL_SPI_DisableIT_TXE(SPI2);
+//		}
+//	}
+
+	//Check OVR flag value in ISR register
+	if(LL_SPI_IsActiveFlag_OVR(SPI2)) {
+
+	}
 }

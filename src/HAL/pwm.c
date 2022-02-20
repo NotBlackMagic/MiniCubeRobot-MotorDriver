@@ -20,13 +20,13 @@ void PWM1Init() {
 	LL_TIM_SetClockDivision(TIM1, LL_TIM_CLOCKDIVISION_DIV1);
 	LL_TIM_SetPrescaler(TIM1, 0);
 	LL_TIM_SetCounterMode(TIM1, LL_TIM_COUNTERMODE_UP);
-	LL_TIM_SetAutoReload(TIM1, 720);
+	LL_TIM_SetAutoReload(TIM1, 640);
 	LL_TIM_EnableARRPreload(TIM1);
 
 	//Configure Timer output
 	LL_TIM_OC_SetMode(TIM1, LL_TIM_CHANNEL_CH1, LL_TIM_OCMODE_PWM1);
 	LL_TIM_OC_SetPolarity(TIM1, LL_TIM_CHANNEL_CH1, LL_TIM_OCPOLARITY_LOW);
-	LL_TIM_OC_SetCompareCH1(TIM1, 360);
+	LL_TIM_OC_SetCompareCH1(TIM1, 320);
 	LL_TIM_OC_EnablePreload(TIM1, LL_TIM_CHANNEL_CH1);
 	LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH1);
 
@@ -59,13 +59,13 @@ void PWM2Init() {
 	LL_TIM_SetClockDivision(TIM2, LL_TIM_CLOCKDIVISION_DIV1);
 	LL_TIM_SetPrescaler(TIM2, 0);
 	LL_TIM_SetCounterMode(TIM2, LL_TIM_COUNTERMODE_UP);
-	LL_TIM_SetAutoReload(TIM2, 720);
+	LL_TIM_SetAutoReload(TIM2, 640);
 	LL_TIM_EnableARRPreload(TIM2);
 
 	//Configure Timer output
 	LL_TIM_OC_SetMode(TIM2, LL_TIM_CHANNEL_CH4, LL_TIM_OCMODE_PWM1);
 	LL_TIM_OC_SetPolarity(TIM2, LL_TIM_CHANNEL_CH4, LL_TIM_OCPOLARITY_LOW);
-	LL_TIM_OC_SetCompareCH4(TIM2, 360);
+	LL_TIM_OC_SetCompareCH4(TIM2, 320);
 	LL_TIM_OC_EnablePreload(TIM2, LL_TIM_CHANNEL_CH4);
 	LL_TIM_CC_EnableChannel(TIM2, LL_TIM_CHANNEL_CH4);
 
@@ -95,8 +95,8 @@ void PWM4Init() {
 	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_9, LL_GPIO_OUTPUT_PUSHPULL);
 
 	//Configure Timer
-	LL_TIM_SetClockDivision(TIM4, LL_TIM_CLOCKDIVISION_DIV1);		//Lower clock to 1/1 = 72MHz/1 = 72 MHz
-	LL_TIM_SetPrescaler(TIM4, 281);									//Set PWM clock to 1kHz; Fpwm = 72MHz / ((Prescaler + 1) * Compare)
+	LL_TIM_SetClockDivision(TIM4, LL_TIM_CLOCKDIVISION_DIV1);		//Lower clock to 1/1 = 64MHz/1 = 64MHz
+	LL_TIM_SetPrescaler(TIM4, 249);									//Set PWM clock to 1kHz; Fpwm = 64MHz / ((Prescaler + 1) * Compare)
 	LL_TIM_SetCounterMode(TIM4, LL_TIM_COUNTERMODE_UP);
 	LL_TIM_SetAutoReload(TIM4, 255);
 	LL_TIM_EnableARRPreload(TIM4);
@@ -104,13 +104,13 @@ void PWM4Init() {
 	//Configure Timer outputs
 	//Set PWM TIM4 CH4
 	LL_TIM_OC_SetMode(TIM4, LL_TIM_CHANNEL_CH2, LL_TIM_OCMODE_PWM1);
-	LL_TIM_OC_SetPolarity(TIM4, LL_TIM_CHANNEL_CH2, LL_TIM_OCPOLARITY_LOW);
+	LL_TIM_OC_SetPolarity(TIM4, LL_TIM_CHANNEL_CH2, LL_TIM_OCPOLARITY_HIGH);
 	LL_TIM_OC_SetCompareCH2(TIM4, 0);
 	LL_TIM_OC_EnablePreload(TIM4, LL_TIM_CHANNEL_CH2);
 //	LL_TIM_CC_EnableChannel(TIM4, LL_TIM_CHANNEL_CH2);
 	//Set PWM TIM4 CH4
 	LL_TIM_OC_SetMode(TIM4, LL_TIM_CHANNEL_CH4, LL_TIM_OCMODE_PWM1);
-	LL_TIM_OC_SetPolarity(TIM4, LL_TIM_CHANNEL_CH4, LL_TIM_OCPOLARITY_LOW);
+	LL_TIM_OC_SetPolarity(TIM4, LL_TIM_CHANNEL_CH4, LL_TIM_OCPOLARITY_HIGH);
 	LL_TIM_OC_SetCompareCH4(TIM4, 0);
 	LL_TIM_OC_EnablePreload(TIM4, LL_TIM_CHANNEL_CH4);
 //	LL_TIM_CC_EnableChannel(TIM4, LL_TIM_CHANNEL_CH4);
@@ -151,35 +151,15 @@ void PWM4Set(uint8_t channel, uint16_t value) {
 			LL_TIM_OC_SetCompareCH1(TIM4, value);
 			break;
 		case 2:
-			LL_TIM_OC_SetCompareCH1(TIM4, value);
+			LL_TIM_OC_SetCompareCH2(TIM4, value);
 			break;
 		case 3:
-			LL_TIM_OC_SetCompareCH1(TIM4, value);
+			LL_TIM_OC_SetCompareCH3(TIM4, value);
 			break;
 		case 4:
-			LL_TIM_OC_SetCompareCH1(TIM4, value);
+			LL_TIM_OC_SetCompareCH4(TIM4, value);
 			break;
 		default:
 			break;
-	}
-}
-
-uint8_t pin = 0;
-void TIM1_UP_IRQHandler() {
-	//Check whether CC1 interrupt is pending
-	if(LL_TIM_IsActiveFlag_UPDATE(TIM1) == 1) {
-		//Clear the update interrupt flag
-		LL_TIM_ClearFlag_UPDATE(TIM1);
-	}
-}
-
-void TIM2_IRQHandler() {
-	//Check whether CC1 interrupt is pending
-	if(LL_TIM_IsActiveFlag_UPDATE(TIM2) == 1) {
-		//Clear the update interrupt flag
-		LL_TIM_ClearFlag_UPDATE(TIM2);
-
-		GPIOWrite(0, pin);
-		pin = !pin;
 	}
 }

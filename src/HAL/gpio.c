@@ -20,6 +20,8 @@ void GPIOInit() {
 
 	//Enable PC14 and PC15 as general IO
 	LL_GPIO_AF_Remap_SWJ_NOJTAG();
+	//Enable PD0 and PD1 as general IO
+	LL_GPIO_AF_EnableRemap_PD01();
 
 	//Set ADC Input GPIO's
 	GPIOSetPinMode(GPIO_ADC_HAL_S1, GPIO_Mode_Analog);	//ADC Input HAL Sensor 1
@@ -43,9 +45,30 @@ void GPIOInit() {
 	GPIOSetPinMode(GPIO_IN_MR_ENC, GPIO_Mode_Input);
 
 	//Set Input Pins Interrupts
-//	LL_GPIO_AF_SetEXTISource(LL_GPIO_AF_EXTI_PORTA, LL_GPIO_AF_EXTI_LINE0);
-//	LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_0);
-//	LL_EXTI_EnableRisingTrig_0_31(LL_EXTI_LINE_0);
+	//Motor Encoder Left
+	LL_GPIO_AF_SetEXTISource(LL_GPIO_AF_EXTI_PORTC, LL_GPIO_AF_EXTI_LINE15);
+	LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_15);
+	LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_15);
+	//Motor Encoder Right
+	LL_GPIO_AF_SetEXTISource(LL_GPIO_AF_EXTI_PORTA, LL_GPIO_AF_EXTI_LINE7);
+	LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_7);
+	LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_7);
+//	//Collision Button Front Right
+//	LL_GPIO_AF_SetEXTISource(LL_GPIO_AF_EXTI_PORTA, LL_GPIO_AF_EXTI_LINE8);
+//	LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_8);
+//	LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_8);
+//	//Collision Button Front Left
+//	LL_GPIO_AF_SetEXTISource(LL_GPIO_AF_EXTI_PORTA, LL_GPIO_AF_EXTI_LINE11);
+//	LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_11);
+//	LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_11);
+//	//Collision Button Back Right
+//	LL_GPIO_AF_SetEXTISource(LL_GPIO_AF_EXTI_PORTA, LL_GPIO_AF_EXTI_LINE12);
+//	LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_12);
+//	LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_12);
+//	//Collision Button Back Left
+//	LL_GPIO_AF_SetEXTISource(LL_GPIO_AF_EXTI_PORTA, LL_GPIO_AF_EXTI_LINE11);
+//	LL_EXTI_EnableIT_0_31(LL_EXTI_LINE_11);
+//	LL_EXTI_EnableFallingTrig_0_31(LL_EXTI_LINE_11);
 
 	//Set Output GPIO's
 	GPIOSetPinMode(GPIO_OUT_LED, GPIO_Mode_Output);
@@ -57,6 +80,7 @@ void GPIOInit() {
 //	GPIOSetPinMode(GPIO_OUT_MR_PWM, GPIO_Mode_Output);
 	GPIOSetPinMode(GPIO_OUT_SEN_F_EN, GPIO_Mode_Output);
 	GPIOSetPinMode(GPIO_OUT_SEN_B_EN, GPIO_Mode_Output);
+//	GPIOSetPinMode(GPIO_OUT_SPI_CS, GPIO_Mode_Output);
 
 	//Set Output GPIOs
 	GPIOWrite(GPIO_OUT_LED, 0x00);
@@ -68,9 +92,13 @@ void GPIOInit() {
 //	GPIOWrite(GPIO_OUT_MR_PWM, 0x00);
 	GPIOWrite(GPIO_OUT_SEN_F_EN, 0x00);
 	GPIOWrite(GPIO_OUT_SEN_B_EN, 0x00);
+//	GPIOWrite(GPIO_OUT_SPI_CS, 0x00);
 
-//	NVIC_EnableIRQ(EXTI0_IRQn);
-//	NVIC_SetPriority(EXTI0_IRQn, 0);
+	//Enable EXTI Interrupts
+	NVIC_EnableIRQ(EXTI9_5_IRQn);
+	NVIC_SetPriority(EXTI9_5_IRQn, 0);
+	NVIC_EnableIRQ(EXTI15_10_IRQn);
+	NVIC_SetPriority(EXTI15_10_IRQn, 0);
 }
 
 /**
@@ -111,4 +139,185 @@ uint8_t GPIORead(uint8_t gpio) {
 	uint8_t port = (gpio >> 4);
 	uint8_t pin = gpio & 0x0F;
 	return LL_GPIO_IsInputPinSet(gpioPorts[port], gpioPins[pin]);
+}
+
+__attribute__((weak)) void EXTI0Callback() {}
+
+/**
+  * @brief	This function is the Handler for GPIO0s
+  * @param	None
+  * @return	None
+  */
+void EXTI0_IRQHandler(void) {
+	//EXTI0 Triggered, call callback function
+	EXTI0Callback();
+
+	//Clear Interrupt Flag
+	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
+}
+
+__attribute__((weak)) void EXTI1Callback() {}
+
+/**
+  * @brief	This function is the Handler for GPIO1s
+  * @param	None
+  * @return	None
+  */
+void EXTI1_IRQHandler(void) {
+	//EXTI1 Triggered, call callback function
+	EXTI1Callback();
+
+	//Clear Interrupt Flag
+	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_1);
+}
+
+__attribute__((weak)) void EXTI2Callback() {}
+
+/**
+  * @brief	This function is the Handler for GPIO2s
+  * @param	None
+  * @return	None
+  */
+void EXTI2_IRQHandler(void) {
+	//EXTI2 Triggered, call callback function
+	EXTI2Callback();
+
+	//Clear Interrupt Flag
+	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_2);
+}
+
+__attribute__((weak)) void EXTI3Callback() {}
+
+/**
+  * @brief	This function is the Handler for GPIO3s
+  * @param	None
+  * @return	None
+  */
+void EXTI3_IRQHandler(void) {
+	//EXTI3 Triggered, call callback function
+	EXTI3Callback();
+
+	//Clear Interrupt Flag
+	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_3);
+}
+
+__attribute__((weak)) void EXTI4Callback() {}
+
+/**
+  * @brief	This function is the Handler for GPIO4s
+  * @param	None
+  * @return	None
+  */
+void EXTI4_IRQHandler(void) {
+	//EXTI4 Triggered, call callback function
+	EXTI4Callback();
+
+	//Clear Interrupt Flag
+	LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_4);
+}
+
+__attribute__((weak)) void EXTI5Callback() {}
+__attribute__((weak)) void EXTI6Callback() {}
+__attribute__((weak)) void EXTI7Callback() {}
+__attribute__((weak)) void EXTI8Callback() {}
+__attribute__((weak)) void EXTI9Callback() {}
+
+/**
+  * @brief	This function is the Handler for GPIO5s to GPIO9s
+  * @param	None
+  * @return	None
+  */
+void EXTI9_5_IRQHandler(void) {
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_5) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_5) == 0x01) {
+		//EXTI5 Triggered, call callback function
+		EXTI5Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_5);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_6) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_6) == 0x01) {
+		//EXTI6 Triggered, call callback function
+		EXTI6Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_6);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_7) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_7) == 0x01) {
+		//EXTI7 Triggered, call callback function
+		EXTI7Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_7);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_8) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_8) == 0x01) {
+		//EXTI8 Triggered, call callback function
+		EXTI8Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_8);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_9) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_9) == 0x01) {
+		//EXTI9 Triggered, call callback function
+		EXTI9Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_9);
+	}
+}
+
+__attribute__((weak)) void EXTI10Callback() {}
+__attribute__((weak)) void EXTI11Callback() {}
+__attribute__((weak)) void EXTI12Callback() {}
+__attribute__((weak)) void EXTI13Callback() {}
+__attribute__((weak)) void EXTI14Callback() {}
+__attribute__((weak)) void EXTI15Callback() {}
+
+/**
+  * @brief	This function is the Handler for GPIO10s to GPIO15s
+  * @param	None
+  * @return	None
+  */
+void EXTI15_10_IRQHandler(void) {
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_10) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_10) == 0x01) {
+		//EXTI10 Triggered, call callback function
+		EXTI10Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_10);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_11) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_11) == 0x01) {
+		//EXTI11 Triggered, call callback function
+		EXTI11Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_11);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_12) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_12) == 0x01) {
+		//EXTI12 Triggered, call callback function
+		EXTI12Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_12);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_13) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_13) == 0x01) {
+		//EXTI13 Triggered, call callback function
+		EXTI13Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_13);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_14) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_14) == 0x01) {
+		//EXTI14 Triggered, call callback function
+		EXTI14Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_14);
+	}
+	if(LL_EXTI_IsEnabledIT_0_31(LL_EXTI_LINE_15) == 0x01 && LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_15) == 0x01) {
+		//EXTI15 Triggered, call callback function
+		EXTI15Callback();
+
+		//Clear Interrupt Flag
+		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_15);
+	}
 }
