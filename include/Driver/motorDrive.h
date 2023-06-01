@@ -19,15 +19,15 @@
 
 #include "encoder.h"
 
-#include "commonTypes.h"
+#include "uRMSStdTypes.h"
 
 #define MOTOR_PLANETARY_GEAR_RATIO			171		//Gear Ratio 1:171
 #define MOTOR_DRIVE_GEAR					11		//Motor Gear 11 teeth
 #define MOTOR_WHEEL_GEAR					24		//Wheel Gear 24 teeth
-#define WHEEL_CIRCUMFERENCE					89		//Wheel circumference in mm (88.6 mm)
-#define WHEEL_SPACING						43		//Wheel Spacing in mm
+#define WHEEL_CIRCUMFERENCE					2903	//Wheel circumference in Q17.15 m (88.6 mm)
+#define WHEEL_SPACING						1409	//Wheel Spacing in Q17.15 m (43 mm)
 
-#define MAX_WHEEL_SPEED						70		//Limit wheel speed to this value in mm/s
+#define MAX_WHEEL_SPEED						2294	//Limit wheel speed to this value in Q17.15 m/s (70 mm/s)
 
 void MotorDriveInit();
 void MotorDriveUpdate();

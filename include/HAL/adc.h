@@ -21,5 +21,4 @@ uint16_t ADC2Read(uint8_t channel);
 }
 #endif
 
-
 #endif /* HAL_ADC_H_ */

@@ -7,8 +7,12 @@
 
 #include "stm32f1xx.h"
 #include "stm32f1xx_ll_bus.h"
+#include "stm32f1xx_ll_dma.h"
 #include "stm32f1xx_ll_gpio.h"
 #include "stm32f1xx_ll_usart.h"
+
+#include "crc.h"
+#include "rcc.h"
 
 void UART1Init(uint32_t baud);
 void UART1SetBaudrate(uint32_t baudrate);

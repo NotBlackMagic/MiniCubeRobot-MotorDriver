@@ -4,31 +4,21 @@
 /********************************************************/
 /*			ROBOT MESSAGES PACKET FORMAT				*/
 /********************************************************/
-//|  1 byte  |  1 byte  |  1 byte  | n bytes | 2 bytes |
-//|----------|----------|----------|---------|---------|
-//| Src ID   | Msgs ID  | Pkt Len  | Data    | CRC     |
+//|   u16    | u32  |   u16    | n*u8 |
+//|----------|------|----------|------|
+//| Topic ID | nsec | Frame ID | Data |
 
-/********************************************************/
-/*					COMMAND MESSAGES					*/
-/********************************************************/
-#define ROBOT_CMD_REBOOT						0x00
-#define ROBOT_CMD_ABORT							0x01
-#define ROBOT_CMD_TWIST							0x02
-#define ROBOT_CMD_TRANSFORM						0x03
+#define ROBOT_MSG_PKT_HEADER_SIZE				0x08
 
-/********************************************************/
-/*					INFO MESSAGES						*/
-/********************************************************/
-#define ROBOT_MSGS_BATTERY						0x00
-#define ROBOT_MSGS_ODOM							0x01
-#define ROBOT_MSGS_RANGE						0x02
-#define ROBOT_MSGS_CONTACT						0x03
-#define ROBOT_MSGS_DRIVE						0x04
-#define ROBOT_MSGS_TIME							0x05
-
-/********************************************************/
-/*					DEBUG MESSAGES						*/
-/********************************************************/
-#define ROBOT_DBG_DRIVE							0x44
+typedef enum {
+	RobotTopic_Battery = 0x00,
+	RobotTopic_Odom = 0x01,
+	RobotTopic_Range = 0x02,
+	RobotTopic_Contact = 0x03,
+	RobotTopic_Twist = 0x04,
+	RobotTopic_LaserScan = 0x05,
+	RobotTopic_Drive = 0x06,
+	RobotTopic_Time = 0x07
+} RobotTopicID;
 
 #endif /* DRIVER_ROBOTMSGS_DEFINES_H_ */

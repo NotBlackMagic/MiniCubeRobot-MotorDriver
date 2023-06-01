@@ -17,8 +17,8 @@
 #include "batteryManager.h"
 #include "collisionSensorBoard.h"
 #include "encoder.h"
+#include "messages.h"
 #include "motorDrive.h"
-#include "robotMsgs.h"
 
 int main(void) {
 	//Configure the system clock

@@ -1,15 +1,17 @@
 #include "motorDrive.h"
 
-int32_t setWheelVelocityLeft;		//In mm/s
-int32_t wheelVelocityLeft;			//In mm/s
-int32_t setWheelVelocityRight;		//In mm/s
-int32_t wheelVelocityRight;			//In mm/s
-int32_t wheelVelocityLeftError;		//In mm/s
-int32_t wheelVelocityRightError;	//In mm/s
+#define ANGLE_RAD_MAX				1686629713
 
-int16_t drivePID_kp = 16384;		//0.5 in Q15
-int16_t drivePID_ki = 19661;		//12 * Ts in Q15
-int16_t drivePID_kd = 0;			//In Q15
+int32_t setWheelVelocityLeft;		//In Q17.15 m/s
+int32_t wheelVelocityLeft;			//In Q17.15 m/s
+int32_t setWheelVelocityRight;		//In Q17.15 m/s
+int32_t wheelVelocityRight;			//In Q17.15 m/s
+int32_t wheelVelocityLeftError;		//In Q17.15 m/s
+int32_t wheelVelocityRightError;	//In Q17.15 m/s
+
+int16_t drivePID_kp = (16384 >> 5);		//0.5 in Q15
+int16_t drivePID_ki = (19661 >> 5);		//12 * Ts in Q15
+int16_t drivePID_kd = 0;				//In Q15
 
 DSPPIDCtrlInstQ15 drivePIDLeft;
 DSPPIDCtrlInstQ15 drivePIDRight;
@@ -17,14 +19,14 @@ DSPPIDCtrlInstQ15 drivePIDRight;
 int16_t drivePWMLeft = 0;
 int16_t drivePWMRight = 0;
 
-Vector3_q31 setRobotLinearSpeed;	//In mm/s
-Vector3_q31 setRobotAngularSpeed;	//In mrad/s
+Vector3_q31 setRobotLinearSpeed;	//In Q17.15 m/s
+Vector3_q31 setRobotAngularSpeed;	//In Q17.15 rad/s
 
-Vector3_q31 odomRobotLinearSpeed;	//In mm/s
-Vector3_q31 odomRobotAngularSpeed;	//In mrad/s
+Vector3_q31 odomRobotLinearSpeed;	//In Q17.15 m/s
+Vector3_q31 odomRobotAngularSpeed;	//In Q17.15 rad/s
 
-Vector3_q31 odomRobotPosePosition;		//In mm in Q25.7
-Vector3_q31 odomRobotPoseOrientation;	//In mrad in Q25.7
+Vector3_q31 odomRobotPosePosition;		//In Q17.15 m
+Vector3_q31 odomRobotPoseOrientation;	//In Q3.29 rad
 
 /**
   * @brief	This function initializes the Motor Drive System
@@ -160,22 +162,30 @@ void MotorDriveUpdate() {
 		//https://answers.ros.org/question/231942/computing-odometry-from-two-velocities/
 
 		//Compute velocities in the robot frame
-		setRobotLinearSpeed.y = ((wheelVelocityRight + wheelVelocityLeft) >> 1); //Y (forward velocity in mm/s)
+		setRobotLinearSpeed.y = ((wheelVelocityRight + wheelVelocityLeft) >> 1); //Y (forward velocity in Q17.15 m/s)
 		setRobotLinearSpeed.x = 0; //X (side velocity in mm/s)
-		setRobotAngularSpeed.z = (((wheelVelocityLeft - wheelVelocityRight) * 1000) / WHEEL_SPACING);	//Angular velocity in mrad/s
+		setRobotAngularSpeed.z = (((wheelVelocityLeft - wheelVelocityRight) << 16) / WHEEL_SPACING);	//Angular velocity in Q17.15 rad/s
 
 		//Transform velocities into the odometry (global) frame
-		float th = (odomRobotPoseOrientation.z >> 7) * 0.001f;
+		float th = odomRobotPoseOrientation.z * 1.0f/536870912.0f;		//Convert from Q3.29 rad to float rad
 		float sinZ = sinf(th);
 		float cosZ = cosf(th);
 		odomRobotLinearSpeed.y = setRobotLinearSpeed.y * cosZ + setRobotLinearSpeed.x * sinZ;
 		odomRobotLinearSpeed.x = setRobotLinearSpeed.y * sinZ - setRobotLinearSpeed.x * cosZ;
 		odomRobotAngularSpeed.z = setRobotAngularSpeed.z;
 
-		//Position = Velocity * dTime, dTime = 50ms -> 0.05s -> 1/20 s
-		odomRobotPosePosition.x += (odomRobotLinearSpeed.x << 7) / 20;
-		odomRobotPosePosition.y += (odomRobotLinearSpeed.y << 7) / 20;
-		odomRobotPoseOrientation.z += (odomRobotAngularSpeed.z << 7) / 20;
+		//Position = Velocity * dTime, dTime = 50ms -> 0.05s
+		odomRobotPosePosition.x += (odomRobotLinearSpeed.x * 1638) >> 15;
+		odomRobotPosePosition.y += (odomRobotLinearSpeed.y * 1638) >> 15;
+		odomRobotPoseOrientation.z += (odomRobotAngularSpeed.z * 1638) >> 2;
+
+		//Handle angle wrap around
+		if(odomRobotPoseOrientation.z > ANGLE_RAD_MAX) {
+			odomRobotPoseOrientation.z = -ANGLE_RAD_MAX + (odomRobotPoseOrientation.z - ANGLE_RAD_MAX);
+		}
+		else if(odomRobotPoseOrientation.z < -ANGLE_RAD_MAX) {
+			odomRobotPoseOrientation.z = ANGLE_RAD_MAX + (odomRobotPoseOrientation.z + ANGLE_RAD_MAX);
+		}
 
 		timestampMD = GetSysTick();
 	}
@@ -189,10 +199,8 @@ void MotorDriveUpdate() {
   */
 void MotorDriveTwist(Vector3_q31 linear, Vector3_q31 angular) {
 	//Convert twist parameters to wheel velocities (setVelocityLeft and setVelocityRight)
-	setWheelVelocityRight = (((int32_t)angular.z * WHEEL_SPACING) >> 1) + (int32_t)linear.x * 1000;
-	setWheelVelocityLeft = ((int32_t)linear.x * 1000 * 2) - setWheelVelocityRight;
-	setWheelVelocityRight = (setWheelVelocityRight >> 15);
-	setWheelVelocityLeft = (setWheelVelocityLeft >> 15);
+	setWheelVelocityRight = (((int32_t)angular.z * WHEEL_SPACING) >> 16) + (int32_t)linear.x;
+	setWheelVelocityLeft = ((int32_t)linear.x * 2) - setWheelVelocityRight;
 
 	//Limit max wheel speed
 	if(setWheelVelocityLeft > MAX_WHEEL_SPEED) {
@@ -211,9 +219,9 @@ void MotorDriveTwist(Vector3_q31 linear, Vector3_q31 angular) {
 }
 
 /**
-  * @brief	This function gets the wheel speeds, in mm/s, taken into account gear ratios and wheel circumference
-  * @param	wheelLeft: pointer to write left wheel speed to (in mm/s)
-  * @param	wheelRight: pointer to write right wheel speed to (in mm/s)
+  * @brief	This function gets the wheel speeds, in Q17.15 m/s, taken into account gear ratios and wheel circumference
+  * @param	wheelLeft: pointer to write left wheel speed to (in Q17.15 m/s)
+  * @param	wheelRight: pointer to write right wheel speed to (in Q17.15 m/s)
   * @return	None
   */
 void MotorDriveGetWheelVelocity(int32_t* wheelLeft, int32_t* wheelRight) {
@@ -223,8 +231,8 @@ void MotorDriveGetWheelVelocity(int32_t* wheelLeft, int32_t* wheelRight) {
 
 /**
   * @brief	This function gets the robot velocities/speeds in robot (local) coordinate frame
-  * @param	linear: pointer to write the linear speeds (x, y, z) to (in mm/s)
-  * @param	angular: pointer to write the linear speeds (x, y, z) to (in mrad/s)
+  * @param	linear: pointer to write the linear speeds (x, y, z) to (in Q17.15 m/s)
+  * @param	angular: pointer to write the linear speeds (x, y, z) to (in Q17.15 rad/s)
   * @return	None
   */
 void MotorDriveGetVelocity(Vector3_q31* linear, Vector3_q31* angular){
@@ -234,8 +242,8 @@ void MotorDriveGetVelocity(Vector3_q31* linear, Vector3_q31* angular){
 
 /**
   * @brief	This function gets the robot velocities/speeds in the odometry (global) coordinate frame
-  * @param	linear: pointer to write the linear speeds (x, y, z) to (in mm/s)
-  * @param	angular: pointer to write the linear speeds (x, y, z) to (in mrad/s)
+  * @param	linear: pointer to write the linear speeds (x, y, z) to (in Q17.15 m/s)
+  * @param	angular: pointer to write the linear speeds (x, y, z) to (in Q17.15 rad/s)
   * @return	None
   */
 void MotorOdomGetVelocity(Vector3_q31* linear, Vector3_q31* angular) {
@@ -245,8 +253,8 @@ void MotorOdomGetVelocity(Vector3_q31* linear, Vector3_q31* angular) {
 
 /**
   * @brief	This function gets the robot position and orientation/rotation in the odometry (global) coordinate frame
-  * @param	pose: pointer to write the position (x, y, z) to (in Q25.7 mm)
-  * @param	orientation: pointer to write the orientation/rotation (x, y, z) to (in Q25.7 mrad)
+  * @param	pose: pointer to write the position (x, y, z) to (in Q17.15 m)
+  * @param	orientation: pointer to write the orientation/rotation (x, y, z) to (in Q3.29 rad/s)
   * @return	None
   */
 void MotorOdomGetPose(Vector3_q31* pose, Vector3_q31* orientation) {

@@ -55,6 +55,7 @@ void GPIOInit();
 void GPIOSetPinMode(uint8_t gpio, GPIOOutputMode mode);
 void GPIOWrite(uint8_t gpio, uint8_t on);
 uint8_t GPIORead(uint8_t gpio);
+void GPIOToggle(uint8_t gpio);
 
 #ifdef __cplusplus
 }

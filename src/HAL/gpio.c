@@ -141,6 +141,23 @@ uint8_t GPIORead(uint8_t gpio) {
 	return LL_GPIO_IsInputPinSet(gpioPorts[port], gpioPins[pin]);
 }
 
+/**
+  * @brief	This function toggles the output state of a pin
+  * @param	gpio: Pin to toggle output
+  * @return	1 input is set high, 0 input is set low
+  */
+void GPIOToggle(uint8_t gpio) {
+	uint8_t port = (gpio >> 4);
+	uint8_t pin = gpio & 0x0F;
+	uint8_t status = LL_GPIO_IsOutputPinSet(gpioPorts[port], gpioPins[pin]);
+	if(status == 1) {
+		LL_GPIO_SetOutputPin(gpioPorts[port], gpioPins[pin]);
+	}
+	else {
+		LL_GPIO_ResetOutputPin(gpioPorts[port], gpioPins[pin]);
+	}
+}
+
 __attribute__((weak)) void EXTI0Callback() {}
 
 /**

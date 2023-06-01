@@ -67,7 +67,7 @@ void ADC1Init() {
 							LL_DMA_MEMORY_INCREMENT           |
 							LL_DMA_PDATAALIGN_HALFWORD        |
 							LL_DMA_MDATAALIGN_HALFWORD        |
-							LL_DMA_PRIORITY_HIGH);
+							LL_DMA_PRIORITY_LOW);
 	LL_DMA_ConfigAddresses(	DMA1,
 							LL_DMA_CHANNEL_1,
 							LL_ADC_DMA_GetRegAddr(ADC1, LL_ADC_DMA_REG_REGULAR_DATA),

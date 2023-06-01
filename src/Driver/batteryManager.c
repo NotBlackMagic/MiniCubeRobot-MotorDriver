@@ -31,6 +31,7 @@ void BatteryManagerInit() {
   * @param	None
   * @return	None
   */
+uint32_t batteryLowToggleTimestamp = 0;
 uint32_t batteryManagerTimestamp = 0;
 void BatteryManagerUpdate() {
 	//Battery Manager Update Call
@@ -60,6 +61,18 @@ void BatteryManagerUpdate() {
 		}
 
 		batteryManagerTimestamp = GetSysTick();
+	}
+
+	//Signal Battery Low through power LED
+	if((batteryLowToggleTimestamp + 100) < GetSysTick()) {
+		if(batteryChargingStatus == 0x00 && batteryPercentage < 20) {
+			GPIOToggle(GPIO_OUT_LED);
+		}
+		else {
+			GPIOWrite(GPIO_OUT_LED, 0x01);
+		}
+
+		batteryLowToggleTimestamp = GetSysTick();
 	}
 }
 
